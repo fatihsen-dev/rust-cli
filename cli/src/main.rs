@@ -1,5 +1,9 @@
 use clap::Parser;
-use colored::Colorize;
+use prettytable::color;
+use prettytable::Attr;
+use prettytable::Cell;
+use prettytable::Row;
+use prettytable::Table;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
@@ -13,6 +17,12 @@ struct Cli {
     action: String,
     #[arg(num_args(0..))]
     args: Vec<String>,
+}
+
+struct CliCommand {
+    name: String,
+    command: String,
+    information: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,41 +54,23 @@ impl Todo {
         Todo::save_todos(todos).expect("Failed to write file!");
     }
     fn list(todos: &mut Vec<Todo>) {
-        let max_length = todos
-            .iter()
-            .map(|todo| {
-                todo.title.len() + todo.body.len() + todo.id.len() + "| ID: | TODO : ".len()
-            })
-            .max()
-            .unwrap_or(0);
+        let mut table = Table::new();
 
-        let mut top_line = String::new();
-        let mut bottom_line = String::new();
-
-        for _ in 0..(max_length / 2 - " TODOS ".len() + 4) {
-            top_line += "=";
-        }
-        for _ in 0..(max_length + 1) {
-            bottom_line += "=";
-        }
-
-        println!(
-            "{}{}{}",
-            top_line,
-            " TODOS ".truecolor(91, 96, 151),
-            top_line
-        );
+        table.add_row(Row::new(vec![
+            Cell::new("ID").with_style(Attr::ForegroundColor(color::MAGENTA)),
+            Cell::new("TITLE").with_style(Attr::ForegroundColor(color::MAGENTA)),
+            Cell::new("BODY").with_style(Attr::ForegroundColor(color::MAGENTA)),
+        ]));
 
         for todo in todos {
-            println!(
-                "- ID: {} | {}: {}",
-                todo.id.truecolor(253, 191, 70),
-                todo.title.truecolor(240, 106, 109),
-                todo.body.truecolor(84, 193, 173)
-            );
+            table.add_row(Row::new(vec![
+                Cell::new(&todo.id.to_string()).with_style(Attr::ForegroundColor(color::CYAN)),
+                Cell::new(&todo.title.to_string()).with_style(Attr::ForegroundColor(color::CYAN)),
+                Cell::new(&todo.body.to_string()).with_style(Attr::ForegroundColor(color::CYAN)),
+            ]));
         }
 
-        println!("{}", bottom_line,);
+        table.printstd();
     }
     fn load_json(todos: &mut Vec<Todo>) {
         if !Path::new("todos.json").exists() {
@@ -154,6 +146,7 @@ fn main() {
         "list" => {
             Todo::list(&mut todos);
         }
+        "help" => help(),
         _ => panic!("Unknown action!"),
     }
 }
@@ -164,4 +157,53 @@ fn clear_terminal() {
     } else {
         Command::new("clear").status().unwrap();
     }
+}
+
+fn help() {
+    let commands: Vec<CliCommand> = vec![
+        CliCommand {
+            name: String::from("create"),
+            command: String::from("cli.exe create \"<title>\" \"<body>\""),
+            information: String::from("Used to create a new TODO. <title> is the title, <body> is the description."),
+        },
+        CliCommand {
+            name: String::from("update"),
+            command: String::from("cli.exe update \"<id>\" \"<title>\" \"<body>\""),
+            information: String::from("Used to update an existing TODO. <id> is the ID of the TODO, <title> is the new title, <body> is the new description."),
+        },
+        CliCommand {
+            name: String::from("delete"),
+            command: String::from("cli.exe delete \"<id>\""),
+            information: String::from("Used to delete a TODO with the specified ID. <id> is the ID of the TODO to be deleted."),
+        },
+        CliCommand {
+            name: String::from("list"),
+            command: String::from("cli.exe list"),
+            information: String::from("Lists all existing TODOs."),
+        },
+        CliCommand {
+            name: String::from("help"),
+            command: String::from("cli.exe help"),
+            information: String::from("Displays the list of available commands and their descriptions."),
+        },
+    ];
+
+    let mut table = Table::new();
+
+    table.add_row(Row::new(vec![
+        Cell::new("Name").with_style(Attr::ForegroundColor(color::MAGENTA)),
+        Cell::new("Command").with_style(Attr::ForegroundColor(color::MAGENTA)),
+        Cell::new("Information").with_style(Attr::ForegroundColor(color::MAGENTA)),
+    ]));
+
+    for command in commands {
+        table.add_row(Row::new(vec![
+            Cell::new(&command.name.to_string()).with_style(Attr::ForegroundColor(color::CYAN)),
+            Cell::new(&command.command.to_string()).with_style(Attr::ForegroundColor(color::CYAN)),
+            Cell::new(&command.information.to_string())
+                .with_style(Attr::ForegroundColor(color::CYAN)),
+        ]));
+    }
+
+    table.printstd();
 }
