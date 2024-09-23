@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.0", features = ["derive"] }
-uuid = { version = "1.10.0", features = [
+clap = { version = "^4", features = ["derive"] }
+uuid = { version = "^1", features = [
    "v4",
    "fast-rng",
    "macro-diagnostics",
 ] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { version = "^1", features = ["derive"] }
+serde_json = "^1"
+colored={version = "^2"}
